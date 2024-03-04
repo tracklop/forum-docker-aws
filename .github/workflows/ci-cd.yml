@@ -99,26 +99,35 @@ jobs:
                   SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
             - name: Deploy to Docker Swarm
               run: |
-                  # ssh -i ${{ secrets.SSH_PRIVATE_KEY }} ec2-user@ec2-13-39-109-208.eu-west-3.compute.amazonaws.com "docker stack deploy -c /home/ec2-user/docker-compose.yml forum_dev --with-registry-auth"
-
                   ssh -i ${{ secrets.SSH_PRIVATE_KEY }} ec2-user@ec2-13-39-109-208.eu-west-3.compute.amazonaws.com << 'EOF'
 
                   # Pour le service API
                   cat <<EOT > /home/ec2-user/api/app/.env
-                  ANOTHER_VARIABLE=${{ secrets.API_ANOTHER_VARIABLE }}
-                  # Ajoutez les autres variables ici
+                  SECRET=${{ secrets.SESSION_SECRET }}
+                  ENVIRONMENT=${{ secrets.ENVIRONMENT }}
+                  PORT=${{ secrets.API_PORT }}
+                  DATABASE_HOST=${{ secrets.DATABASE_HOST }}
+                  DATABASE_DB=${{ secrets.DATABASE_DB }}
+                  DATABASE_USER=${{ secrets.DATABASE_USER }}
+                  DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
+                  DATABASE_PORT=${{ secrets.DATABASE_PORT }}
+                  DATABASE_SYNCHRONIZE=${{ secrets.DATABASE_SYNCHRONIZE }}
+                  DATABASE_SCHEMA=${{ secrets.DATABASE_SCHEMA }}
+                  DATABASE_DIALECT=${{ secrets.DATABASE_DIALECT }}
                   EOT
 
                   # Pour le service THREAD
                   cat <<EOT > /home/ec2-user/thread/app/.env
-                  ANOTHER_VARIABLE=${{ secrets.THREAD_ANOTHER_VARIABLE }}
-                  # Ajoutez les autres variables ici
+                  SECRET=${{ secrets.SESSION_SECRET }}
+                  ENVIRONMENT=${{ secrets.ENVIRONMENT }}
+                  PORT=${{ secrets.THREAD_PORT }}
                   EOT
 
                   # Pour le service SENDER
                   cat <<EOT > /home/ec2-user/sender/app/.env
-                  ANOTHER_VARIABLE=${{ secrets.SENDER_ANOTHER_VARIABLE }}
-                  # Ajoutez les autres variables ici
+                  SECRET=${{ secrets.SESSION_SECRET }}
+                  ENVIRONMENT=${{ secrets.ENVIRONMENT }}
+                  PORT=${{ secrets.SENDER_PORT }}
                   EOT
 
 
