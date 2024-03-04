@@ -4,6 +4,7 @@
 	"description": "Sender service for anonymous blog (send messages)",
 	"main": "app.js",
 	"scripts": {
+        "start": "node ./src/app.js",
 		"test": "echo \"no test script ...\"",
 		"lint": "echo \"no lint script ...\"",
 		"format": "prettier --write ."

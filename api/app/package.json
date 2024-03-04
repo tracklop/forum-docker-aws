@@ -4,6 +4,7 @@
 	"description": "API REST for anonymous blog",
 	"main": "app.js",
 	"scripts": {
+        "start": "node ./src/app.js",
 		"test": "jest",
 		"lint": "echo \"no lint script ...\"",
 		"format": "prettier --write ."

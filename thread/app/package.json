@@ -4,6 +4,7 @@
 	"description": "Thread service for anonymous blog (display messages)",
 	"main": "app.js",
 	"scripts": {
+        "start": "node ./src/app.js",
 		"test": "echo \"no test script ...\"",
 		"lint": "echo \"no lint script ...\"",
 		"format": "prettier --write ."
