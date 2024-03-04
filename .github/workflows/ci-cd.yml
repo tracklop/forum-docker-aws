@@ -21,12 +21,9 @@ jobs:
               id: versioning
               run: |
                   git fetch --tags
-                  LAST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null || echo "v0")
+                  LAST_TAG=$(git describe --tags `git rev-list --tags --max-count=1` 2>/dev/null || echo "v0")
                   NEXT_TAG=$((${LAST_TAG//[!0-9]/} + 1))
-                  echo "NEXT_TAG=v$NEXT_TAG"
                   echo "NEXT_TAG=v$NEXT_TAG" >> $GITHUB_ENV
-                  echo "next_version=v$NEXT_TAG" >> $GITHUB_OUTPUT
-                  echo "next_version=v$NEXT_TAG" >> $GITHUB_ENV
 
     lint-and-format:
         needs: setup
@@ -84,9 +81,11 @@ jobs:
               run: |
                   SERVICES="api thread sender"
                   for SERVICE in $SERVICES; do
-                    docker build ./$SERVICE/app -t ghcr.io/${{ github.repository_owner }}/forum-docker-aws-$SERVICE:${{ env.NEXT_TAG }}
-                    docker push ghcr.io/${{ github.repository_owner }}/forum-docker-aws-$SERVICE:${{ env.NEXT_TAG }}
+                    docker build ./$SERVICE/app -t ghcr.io/${{ github.repository_owner }}/forum-docker-aws-$SERVICE:${NEXT_TAG}
+                    docker push ghcr.io/${{ github.repository_owner }}/forum-docker-aws-$SERVICE:${NEXT_TAG}
                   done
+              env:
+                  NEXT_TAG: ${{ needs.setup.outputs.NEXT_TAG }}
 
     deploy:
         needs: build-and-push
