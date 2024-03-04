@@ -68,7 +68,7 @@ jobs:
                   # Exemple : DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
     build-and-push:
-        needs: run-tests
+        needs: [setup, run-tests]
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
