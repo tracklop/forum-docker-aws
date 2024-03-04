@@ -97,6 +97,12 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
+            - name: Setup SSH agent
+              run: |
+                  mkdir -p ~/.ssh
+                  echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+                  chmod 600 ~/.ssh/id_rsa
+                  ssh-keyscan ec2-13-39-109-208.eu-west-3.compute.amazonaws.com >> ~/.ssh/known_hosts
             - name: Transfer docker-compose.yml to EC2
               run: |
                   scp -i ${{ secrets.SSH_PRIVATE_KEY }} ./docker-compose.yml ec2-user@ec2-13-39-109-208.eu-west-3.compute.amazonaws.com:/home/ec2-user/docker-compose.yml
