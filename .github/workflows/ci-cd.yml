@@ -26,6 +26,7 @@ jobs:
                   echo "NEXT_TAG=v$NEXT_TAG"
                   echo "NEXT_TAG=v$NEXT_TAG" >> $GITHUB_ENV
                   echo "next_version=v$NEXT_TAG" >> $GITHUB_OUTPUT
+                  echo "next_version=v$NEXT_TAG" >> $GITHUB_ENV
 
     lint-and-format:
         needs: setup
