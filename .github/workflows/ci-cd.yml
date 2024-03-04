@@ -85,7 +85,7 @@ jobs:
               run: |
                   SERVICES="api thread sender"
                   for SERVICE in $SERVICES; do
-                    docker build ./$SERVICE/app -t ghcr.io/${{ github.repository_owner }}/forum-docker-aws-$SERVICE:latest
+                    docker build ./$SERVICE -t ghcr.io/${{ github.repository_owner }}/forum-docker-aws-$SERVICE:latest
                     docker push ghcr.io/${{ github.repository_owner }}/forum-docker-aws-$SERVICE:latest
                   done
               env:
