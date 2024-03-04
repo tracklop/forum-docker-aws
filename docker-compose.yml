@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+    api:
+        container_name: blog_api
+        restart: unless-stopped
+        image: ghcr.io/tracklop/forum-docker-aws-api:v1
+        env_file:
+            - ./api/app/.env
+        depends_on:
+            - db
+        ports:
+            - 3000:3000
+        volumes:
+            - './api/app:/home/app'
+            - '/home/app/node_modules'
+        networks:
+            - app-network
+
+    db:
+        image: postgres
+        container_name: blog_db
+        restart: unless-stopped
+        ports:
+            - 5432:5432
+        environment:
+            - POSTGRES_HOST=postgres
+            - POSTGRES_DB=postgres
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=docker
+            - POSTGRES_PORT=5432
+        volumes:
+            - db_blog_data:/var/lib/postgresql/data
+        networks:
+            - app-network
+
+    thread:
+        container_name: blog_thread
+        restart: unless-stopped
+        image: ghcr.io/tracklop/forum-docker-aws-thread:v1
+        env_file:
+            - ./thread/app/.env
+        depends_on:
+            - api
+        ports:
+            - 80:80
+        volumes:
+            - './thread/app:/home/app'
+            - '/home/app/node_modules'
+        networks:
+            - app-network
+
+    sender:
+        container_name: blog_sender
+        restart: unless-stopped
+        image: ghcr.io/tracklop/forum-docker-aws-sender:v1
+        env_file:
+            - ./sender/app/.env
+        depends_on:
+            - api
+        ports:
+            - 8080:8080
+        volumes:
+            - './sender/app:/home/app'
+            - '/home/app/node_modules'
+        networks:
+            - app-network
+
+volumes:
+    db_blog_data:
+
+networks:
+    app-network:
+        driver: bridge
