@@ -1,0 +1,130 @@
+name: CI/CD Pipeline
+
+on:
+    push:
+        branches:
+            - dev
+    pull_request:
+        branches:
+            - dev
+
+jobs:
+    setup:
+        runs-on: ubuntu-latest
+        outputs:
+            next_version: ${{ steps.versioning.outputs.next_version }}
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  fetch-depth: 0
+            - name: Calculate next version
+              id: versioning
+              run: |
+                  git fetch --tags
+                  LAST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+                  NEXT_TAG=$((${LAST_TAG//[!0-9]/} + 1))
+                  echo "NEXT_TAG=v$NEXT_TAG" >> $GITHUB_ENV
+                  echo "::set-output name=next_version::v$NEXT_TAG"
+
+    lint-and-format:
+        needs: setup
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                service: [api, thread, sender]
+        steps:
+            - uses: actions/checkout@v2
+            - name: Set up Node.js
+              uses: actions/setup-node@v2
+              with:
+                  node-version: '18'
+            - name: Install dependencies
+              run: cd ${{ matrix.service }}/app && npm install
+            - name: Run lint
+              run: cd ${{ matrix.service }}/app && npm run lint
+            - name: Run format
+              run: cd ${{ matrix.service }}/app && npm run format
+    run-tests:
+        needs: lint-and-format
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                service: [api, thread, sender]
+        steps:
+            - uses: actions/checkout@v2
+            - name: Set up Node.js
+              uses: actions/setup-node@v2
+              with:
+                  node-version: '18'
+            - name: Install dependencies
+              run: cd ${{ matrix.service }}/app && npm install
+            - name: Run tests
+              run: cd ${{ matrix.service }}/app && npm test
+              env:
+                  NODE_ENV: test
+                  # Ici, ajoutez les variables d'environnement nécessaires pour vos tests
+                  # Exemple : DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+    build-and-push:
+        needs: lint-and-format
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v1
+            - name: Log in to GitHub Container Registry
+              uses: docker/login-action@v1
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GHCR_PAT }}
+            - name: Build and push Docker images
+              run: |
+                  SERVICES="api thread sender"
+                  for SERVICE in $SERVICES; do
+                    docker build ./$SERVICE/app -t ghcr.io/${{ github.repository_owner }}/forum-docker-aws-$SERVICE:${{ needs.setup.outputs.next_version }}
+                    docker push ghcr.io/${{ github.repository_owner }}/forum-docker-aws-$SERVICE:${{ needs.setup.outputs.next_version }}
+                  done
+
+    deploy:
+        needs: build-and-push
+        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - name: Transfer docker-compose.yml to EC2
+              run: |
+                  scp -i ${{ secrets.SSH_PRIVATE_KEY }} ./docker-compose.yml ec2-user@ec2-13-39-109-208.eu-west-3.compute.amazonaws.com:/path/to/remote/
+              env:
+                  SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+            - name: Deploy to Docker Swarm
+              run: |
+                  # ssh -i ${{ secrets.SSH_PRIVATE_KEY }} ec2-user@ec2-13-39-109-208.eu-west-3.compute.amazonaws.com "docker stack deploy -c /home/ec2-user/docker-compose.yml forum_dev --with-registry-auth"
+
+                  ssh -i ${{ secrets.SSH_PRIVATE_KEY }} ec2-user@ec2-13-39-109-208.eu-west-3.compute.amazonaws.com << 'EOF'
+
+                  # Pour le service API
+                  cat <<EOT > /home/ec2-user/api/app/.env
+                  ANOTHER_VARIABLE=${{ secrets.API_ANOTHER_VARIABLE }}
+                  # Ajoutez les autres variables ici
+                  EOT
+
+                  # Pour le service THREAD
+                  cat <<EOT > /home/ec2-user/thread/app/.env
+                  ANOTHER_VARIABLE=${{ secrets.THREAD_ANOTHER_VARIABLE }}
+                  # Ajoutez les autres variables ici
+                  EOT
+
+                  # Pour le service SENDER
+                  cat <<EOT > /home/ec2-user/sender/app/.env
+                  ANOTHER_VARIABLE=${{ secrets.SENDER_ANOTHER_VARIABLE }}
+                  # Ajoutez les autres variables ici
+                  EOT
+
+
+                  # Commande pour déployer avec Docker Swarm
+                  docker stack deploy -c /home/ec2-user/docker-compose.yml forum_dev --with-registry-auth
+
+                  EOF
+              env:
+                  SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
