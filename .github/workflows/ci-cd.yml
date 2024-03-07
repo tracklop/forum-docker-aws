@@ -84,8 +84,11 @@ jobs:
               run: |
                   SERVICES="api thread sender"
                   for SERVICE in $SERVICES; do
-                    docker build ./$SERVICE -t ghcr.io/${{ github.repository_owner }}/forum-docker-aws-$SERVICE:${{ needs.setup.outputs.next_version }}
-                    docker push ghcr.io/${{ github.repository_owner }}/forum-docker-aws-$SERVICE:${{ needs.setup.outputs.next_version }}
+                    # Build the Docker image
+                    docker build ./$SERVICE -t ghcr.io/${{ github.repository }}/forum-docker-aws-$SERVICE:${{ needs.setup.outputs.next_version }} -t ghcr.io/${{ github.repository }}/forum-docker-aws-$SERVICE:latest
+                    # Push both tags: specific version and latest
+                    docker push ghcr.io/${{ github.repository }}/forum-docker-aws-$SERVICE:${{ needs.setup.outputs.next_version }}
+                    docker push ghcr.io/${{ github.repository }}/forum-docker-aws-$SERVICE:latest
                   done
               env:
                   NEXT_TAG: ${{ needs.setup.outputs.next_version }}

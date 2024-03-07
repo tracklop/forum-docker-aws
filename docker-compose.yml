@@ -4,7 +4,7 @@ services:
     api:
         container_name: blog_api
         restart: unless-stopped
-        image: ghcr.io/tracklop/forum-docker-aws-api:v1
+        image: ghcr.io/tracklop/forum-docker-aws-api:latest
         env_file:
             - ./api/app/.env
         depends_on:
@@ -37,7 +37,7 @@ services:
     thread:
         container_name: blog_thread
         restart: unless-stopped
-        image: ghcr.io/tracklop/forum-docker-aws-thread:v1
+        image: ghcr.io/tracklop/forum-docker-aws-thread:latest
         env_file:
             - ./thread/app/.env
         depends_on:
@@ -53,7 +53,7 @@ services:
     sender:
         container_name: blog_sender
         restart: unless-stopped
-        image: ghcr.io/tracklop/forum-docker-aws-sender:v1
+        image: ghcr.io/tracklop/forum-docker-aws-sender:latest
         env_file:
             - ./sender/app/.env
         depends_on:
