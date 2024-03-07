@@ -24,6 +24,7 @@ jobs:
             - id: filter
               uses: dorny/paths-filter@v2
               with:
+                  list-files: shell
                   filters: |
                       api:
                         - 'api/**'
@@ -118,6 +119,7 @@ jobs:
 
     build-and-push-api:
         needs: [changes, setup, run-tests]
+        if: ${{ needs.changes.outputs.api == 'true' }}
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
@@ -130,7 +132,6 @@ jobs:
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
             - name: Build and push Docker images
-              if: needs.changes.outputs.api == 'true'
               run: |
                   # Build the Docker image
                   docker build ./api -t ghcr.io/${{ github.repository }}/build-api:${{ needs.setup.outputs.next_version }} -t ghcr.io/${{ github.repository }}/build-api:latest
@@ -142,6 +143,7 @@ jobs:
 
     build-and-push-thread:
         needs: [changes, setup, run-tests]
+        if: ${{ needs.changes.outputs.thread == 'true' }}
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
@@ -154,7 +156,6 @@ jobs:
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
             - name: Build and push Docker images
-              if: needs.changes.outputs.thread == 'true'
               run: |
                   # Build the Docker image
                   docker build ./thread -t ghcr.io/${{ github.repository }}/build-thread:${{ needs.setup.outputs.next_version }} -t ghcr.io/${{ github.repository }}/build-thread:latest
@@ -166,6 +167,7 @@ jobs:
 
     build-and-push-sender:
         needs: [changes, setup, run-tests]
+        if: ${{ needs.changes.outputs.sender == 'true' }}
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
@@ -178,7 +180,6 @@ jobs:
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
             - name: Build and push Docker images
-              if: needs.changes.outputs.sender == 'true'
               run: |
                   # Build the Docker image
                   docker build ./sender -t ghcr.io/${{ github.repository }}/build-sender:${{ needs.setup.outputs.next_version }} -t ghcr.io/${{ github.repository }}/build-sender:latest
