@@ -8,6 +8,10 @@ on:
         branches:
             - dev
 
+permissions:
+    packages: write
+    contents: read
+
 jobs:
     setup:
         runs-on: ubuntu-latest
@@ -79,7 +83,7 @@ jobs:
               with:
                   registry: ghcr.io
                   username: ${{ github.actor }}
-                  password: ${{ secrets.GHCR_PAT }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
             - name: Build and push Docker images
               run: |
                   SERVICES="api thread sender"
