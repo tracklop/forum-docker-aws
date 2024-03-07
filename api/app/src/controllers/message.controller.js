@@ -1,6 +1,5 @@
 // NOTE - Imports
 import { Op } from 'sequelize';
-import GetMessages from '../models/message.model.js';
 import Message from '../models/message.model.js';
 
 export const GetMessages = async (req, res) => {

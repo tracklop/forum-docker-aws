@@ -9,27 +9,27 @@ on:
             - dev
 
 jobs:
-    # setup:
-    #     runs-on: ubuntu-latest
-    #     outputs:
-    #         next_version: ${{ steps.versioning.outputs.next_version }}
-    #     steps:
-    #         - uses: actions/checkout@v2
-    #           with:
-    #               fetch-depth: 0
-    #         - name: Calculate next version
-    #           id: calculate_next_version
-    #           run: |
-    #               git fetch --tags
-    #               LAST_TAG=$(git describe --tags `git rev-list --tags --max-count=1` 2>/dev/null || echo "v0")
-    #               NEXT_TAG=$((${LAST_TAG//[!0-9]/} + 1))
-    #               echo "next_version=v$NEXT_TAG" | tee -a $GITHUB_ENV
-    #               echo "next_version=v$NEXT_TAG" > $GITHUB_OUTPUT
-    #           env:
-    #               GITHUB_OUTPUT: ${{ github.action_path }}/output
+    setup:
+        runs-on: ubuntu-latest
+        outputs:
+            next_version: ${{ steps.calculate_next_version.outputs.next_version }}
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  fetch-depth: 0
+            - name: Calculate next version
+              id: calculate_next_version
+              run: |
+                  git fetch --tags
+                  LAST_TAG=$(git describe --tags `git rev-list --tags --max-count=1` 2>/dev/null || echo "v0")
+                  NEXT_TAG=$((${LAST_TAG//[!0-9]/} + 1))
+                  echo "next_version=v$NEXT_TAG" | tee -a $GITHUB_ENV
+                  echo "next_version=v$NEXT_TAG" > $GITHUB_OUTPUT
+              env:
+                  GITHUB_OUTPUT: ${{ github.action_path }}/output
 
     lint-and-format:
-        # needs: setup
+        needs: setup
         runs-on: ubuntu-latest
         strategy:
             matrix:
@@ -68,8 +68,7 @@ jobs:
                   # Exemple : DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
     build-and-push:
-        # needs: [setup, run-tests]
-        needs: run-tests
+        needs: [setup, run-tests]
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
@@ -89,7 +88,7 @@ jobs:
                     docker push ghcr.io/${{ github.repository_owner }}/forum-docker-aws-$SERVICE:latest
                   done
               env:
-                  NEXT_TAG: ${{ needs.setup.outputs.NEXT_TAG }}
+                  NEXT_TAG: ${{ needs.setup.outputs.next_version }}
 
     deploy:
         needs: build-and-push
