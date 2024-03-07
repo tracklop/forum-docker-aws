@@ -138,8 +138,8 @@ jobs:
                   docker push ghcr.io/${{ github.repository }}/build-api:${{ needs.setup.outputs.next_version }}
                   docker push ghcr.io/${{ github.repository }}/build-api:latest
                       done
-                  env:
-                      NEXT_TAG: ${{ needs.setup.outputs.next_version }}
+              env:
+                  NEXT_TAG: ${{ needs.setup.outputs.next_version }}
 
     build-and-push-thread:
         needs: [changes, setup, run-tests]
@@ -163,8 +163,8 @@ jobs:
                   docker push ghcr.io/${{ github.repository }}/build-thread:${{ needs.setup.outputs.next_version }}
                   docker push ghcr.io/${{ github.repository }}/build-thread:latest
                       done
-                  env:
-                      NEXT_TAG: ${{ needs.setup.outputs.next_version }}
+              env:
+                  NEXT_TAG: ${{ needs.setup.outputs.next_version }}
 
     build-and-push-sender:
         needs: [changes, setup, run-tests]
@@ -188,8 +188,8 @@ jobs:
                   docker push ghcr.io/${{ github.repository }}/build-sender:${{ needs.setup.outputs.next_version }}
                   docker push ghcr.io/${{ github.repository }}/build-sender:latest
                       done
-                  env:
-                      NEXT_TAG: ${{ needs.setup.outputs.next_version }}
+              env:
+                  NEXT_TAG: ${{ needs.setup.outputs.next_version }}
 
     # deploy:
     #     needs: build-and-push
