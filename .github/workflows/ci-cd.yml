@@ -13,25 +13,25 @@ permissions:
     contents: read
 
 jobs:
-    changes:
-        runs-on: ubuntu-latest
-        outputs:
-            api: ${{ steps.filter.outputs.api }}
-            thread: ${{ steps.filter.outputs.thread }}
-            sender: ${{ steps.filter.outputs.sender }}
-        steps:
-            - uses: actions/checkout@v2
-            - id: filter
-              uses: dorny/paths-filter@v2
-              with:
-                  list-files: shell
-                  filters: |
-                      api:
-                        - 'api/**'
-                      thread:
-                        - 'thread/**'
-                      sender:
-                        - 'sender/**'
+    # changes:
+    #     runs-on: ubuntu-latest
+    #     outputs:
+    #         api: ${{ steps.filter.outputs.api }}
+    #         thread: ${{ steps.filter.outputs.thread }}
+    #         sender: ${{ steps.filter.outputs.sender }}
+    #     steps:
+    #         - uses: actions/checkout@v2
+    #         - id: filter
+    #           uses: dorny/paths-filter@v2
+    #           with:
+    #               list-files: shell
+    #               filters: |
+    #                   api:
+    #                     - 'api/**'
+    #                   thread:
+    #                     - 'thread/**'
+    #                   sender:
+    #                     - 'sender/**'
 
     setup:
         runs-on: ubuntu-latest
@@ -91,8 +91,35 @@ jobs:
                   # Ici, ajoutez les variables d'environnement nécessaires pour vos tests
                   # Exemple : DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-    # build-and-push:
-    #     needs: [setup, run-tests]
+    build-and-push:
+        needs: [setup, run-tests]
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v1
+            - name: Log in to GitHub Container Registry
+              uses: docker/login-action@v1
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+            - name: Build and push Docker images
+              run: |
+                  SERVICES="api thread sender"
+                  for SERVICE in $SERVICES; do
+                    # Build the Docker image
+                    docker build ./$SERVICE -t ghcr.io/${{ github.repository }}/build-$SERVICE:${{ needs.setup.outputs.next_version }} -t ghcr.io/${{ github.repository }}/build-$SERVICE:latest
+                    # Push both tags: specific version and latest
+                    docker push ghcr.io/${{ github.repository }}/build-$SERVICE:${{ needs.setup.outputs.next_version }}
+                    docker push ghcr.io/${{ github.repository }}/build-$SERVICE:latest
+                  done
+              env:
+                  NEXT_TAG: ${{ needs.setup.outputs.next_version }}
+
+    # build-and-push-api:
+    #     needs: [changes, setup, run-tests]
+    #     if: ${{ needs.changes.outputs.api == 'true' }}
     #     runs-on: ubuntu-latest
     #     steps:
     #         - uses: actions/checkout@v2
@@ -106,88 +133,61 @@ jobs:
     #               password: ${{ secrets.GITHUB_TOKEN }}
     #         - name: Build and push Docker images
     #           run: |
-    #               SERVICES="api thread sender"
-    #               for SERVICE in $SERVICES; do
-    #                 # Build the Docker image
-    #                 docker build ./$SERVICE -t ghcr.io/${{ github.repository }}/build-$SERVICE:${{ needs.setup.outputs.next_version }} -t ghcr.io/${{ github.repository }}/build-$SERVICE:latest
-    #                 # Push both tags: specific version and latest
-    #                 docker push ghcr.io/${{ github.repository }}/build-$SERVICE:${{ needs.setup.outputs.next_version }}
-    #                 docker push ghcr.io/${{ github.repository }}/build-$SERVICE:latest
-    #               done
+    #               # Build the Docker image
+    #               docker build ./api -t ghcr.io/${{ github.repository }}/build-api:${{ needs.setup.outputs.next_version }} -t ghcr.io/${{ github.repository }}/build-api:latest
+    #               # Push both tags: specific version and latest
+    #               docker push ghcr.io/${{ github.repository }}/build-api:${{ needs.setup.outputs.next_version }}
+    #               docker push ghcr.io/${{ github.repository }}/build-api:latest
     #           env:
     #               NEXT_TAG: ${{ needs.setup.outputs.next_version }}
 
-    build-and-push-api:
-        needs: [changes, setup, run-tests]
-        if: ${{ needs.changes.outputs.api == 'true' }}
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v2
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v1
-            - name: Log in to GitHub Container Registry
-              uses: docker/login-action@v1
-              with:
-                  registry: ghcr.io
-                  username: ${{ github.actor }}
-                  password: ${{ secrets.GITHUB_TOKEN }}
-            - name: Build and push Docker images
-              run: |
-                  # Build the Docker image
-                  docker build ./api -t ghcr.io/${{ github.repository }}/build-api:${{ needs.setup.outputs.next_version }} -t ghcr.io/${{ github.repository }}/build-api:latest
-                  # Push both tags: specific version and latest
-                  docker push ghcr.io/${{ github.repository }}/build-api:${{ needs.setup.outputs.next_version }}
-                  docker push ghcr.io/${{ github.repository }}/build-api:latest
-              env:
-                  NEXT_TAG: ${{ needs.setup.outputs.next_version }}
+    # build-and-push-thread:
+    #     needs: [changes, setup, run-tests]
+    #     if: ${{ needs.changes.outputs.thread == 'true' }}
+    #     runs-on: ubuntu-latest
+    #     steps:
+    #         - uses: actions/checkout@v2
+    #         - name: Set up Docker Buildx
+    #           uses: docker/setup-buildx-action@v1
+    #         - name: Log in to GitHub Container Registry
+    #           uses: docker/login-action@v1
+    #           with:
+    #               registry: ghcr.io
+    #               username: ${{ github.actor }}
+    #               password: ${{ secrets.GITHUB_TOKEN }}
+    #         - name: Build and push Docker images
+    #           run: |
+    #               # Build the Docker image
+    #               docker build ./thread -t ghcr.io/${{ github.repository }}/build-thread:${{ needs.setup.outputs.next_version }} -t ghcr.io/${{ github.repository }}/build-thread:latest
+    #               # Push both tags: specific version and latest
+    #               docker push ghcr.io/${{ github.repository }}/build-thread:${{ needs.setup.outputs.next_version }}
+    #               docker push ghcr.io/${{ github.repository }}/build-thread:latest
+    #           env:
+    #               NEXT_TAG: ${{ needs.setup.outputs.next_version }}
 
-    build-and-push-thread:
-        needs: [changes, setup, run-tests]
-        if: ${{ needs.changes.outputs.thread == 'true' }}
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v2
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v1
-            - name: Log in to GitHub Container Registry
-              uses: docker/login-action@v1
-              with:
-                  registry: ghcr.io
-                  username: ${{ github.actor }}
-                  password: ${{ secrets.GITHUB_TOKEN }}
-            - name: Build and push Docker images
-              run: |
-                  # Build the Docker image
-                  docker build ./thread -t ghcr.io/${{ github.repository }}/build-thread:${{ needs.setup.outputs.next_version }} -t ghcr.io/${{ github.repository }}/build-thread:latest
-                  # Push both tags: specific version and latest
-                  docker push ghcr.io/${{ github.repository }}/build-thread:${{ needs.setup.outputs.next_version }}
-                  docker push ghcr.io/${{ github.repository }}/build-thread:latest
-              env:
-                  NEXT_TAG: ${{ needs.setup.outputs.next_version }}
-
-    build-and-push-sender:
-        needs: [changes, setup, run-tests]
-        if: ${{ needs.changes.outputs.sender == 'true' }}
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v2
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v1
-            - name: Log in to GitHub Container Registry
-              uses: docker/login-action@v1
-              with:
-                  registry: ghcr.io
-                  username: ${{ github.actor }}
-                  password: ${{ secrets.GITHUB_TOKEN }}
-            - name: Build and push Docker images
-              run: |
-                  # Build the Docker image
-                  docker build ./sender -t ghcr.io/${{ github.repository }}/build-sender:${{ needs.setup.outputs.next_version }} -t ghcr.io/${{ github.repository }}/build-sender:latest
-                  # Push both tags: specific version and latest
-                  docker push ghcr.io/${{ github.repository }}/build-sender:${{ needs.setup.outputs.next_version }}
-                  docker push ghcr.io/${{ github.repository }}/build-sender:latest
-              env:
-                  NEXT_TAG: ${{ needs.setup.outputs.next_version }}
+    # build-and-push-sender:
+    #     needs: [changes, setup, run-tests]
+    #     if: ${{ needs.changes.outputs.sender == 'true' }}
+    #     runs-on: ubuntu-latest
+    #     steps:
+    #         - uses: actions/checkout@v2
+    #         - name: Set up Docker Buildx
+    #           uses: docker/setup-buildx-action@v1
+    #         - name: Log in to GitHub Container Registry
+    #           uses: docker/login-action@v1
+    #           with:
+    #               registry: ghcr.io
+    #               username: ${{ github.actor }}
+    #               password: ${{ secrets.GITHUB_TOKEN }}
+    #         - name: Build and push Docker images
+    #           run: |
+    #               # Build the Docker image
+    #               docker build ./sender -t ghcr.io/${{ github.repository }}/build-sender:${{ needs.setup.outputs.next_version }} -t ghcr.io/${{ github.repository }}/build-sender:latest
+    #               # Push both tags: specific version and latest
+    #               docker push ghcr.io/${{ github.repository }}/build-sender:${{ needs.setup.outputs.next_version }}
+    #               docker push ghcr.io/${{ github.repository }}/build-sender:latest
+    #           env:
+    #               NEXT_TAG: ${{ needs.setup.outputs.next_version }}
 
     # deploy:
     #     needs: build-and-push
